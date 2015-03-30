@@ -101,7 +101,7 @@ void ABR:: Afficher_Arbre(noeud *racine){
 
 }
 
-void ABR :: supprimerMin(noeud *racine,){
+noeud ABR :: supprimerMin(noeud *racine){
     if( racine != NULL ) ; // on vérifie que l'arbre n'est pas vide
     if ( racine->gauche != NULL ) // on continue à gauche
     return supprimerMin (racine->gauche) ;
@@ -109,7 +109,7 @@ void ABR :: supprimerMin(noeud *racine,){
     {
         noeud *temp = new noeud;
         temp = racine->droit;
-        return temp ;
+        return *temp ;
     }
 }
 int ABR ::Afficher_hauteur(noeud *racine){
