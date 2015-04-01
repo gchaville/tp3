@@ -15,7 +15,7 @@ using namespace std;
 
 /*----------------Function----------------*/
 string lireFichier(string lecture);
-void enrFichier(string);
+void enrFichier(string nomDeFichier);
 void commande(string lecture);
 
 /*----------------Classe----------------*/
@@ -103,7 +103,7 @@ int ABR :: Afficher_hauteur(noeud *&racine,int niveau){
     
     
 }
-void ABR:: Afficher_Ascendant(noeud *racine, int d){
+void ABR:: Afficher_descendant(noeud *racine, int d){
     if (racine == d){// Function récursive
         if (racine->gauche != NULL && Racine->droit !=NULL){/*Si la valeur de d est atteint il y a maintenant des ascedant à faire apparaitre */
             cout << racine->gauche->valeur<< endl;
@@ -130,6 +130,20 @@ void ABR:: Afficher_Ascendant(noeud *racine, int d){
         Afficher_Ascendant(racine->droit, d);
     
 }
+
+    
+    
+noeud ABR :: Afficher_Ascendant(noeud *racine, int d){
+    if (racine->valeur == d){
+        return racine->valeur;
+    }
+    else if (racine->valeur < d)
+        return Afficher_Ascendant(racine->gauche, d);
+    else
+        return Afficher_Ascendant(racine->droit, d);
+}
+    /* Va falloir revoir la récursivité */
+    
 void ABR:: Archiver (noeud *racine){
     
 }
@@ -149,7 +163,7 @@ int main(int argc, const char * argv[]) {
 /* -------------------------------------------------------------------------------*/
 
 string lireFichier (string lecture){
-    ifstream lire(lecture.c_str(), ios::in);
+    ifstream lire(lecture.c_str(), ios::in); // ios:: in lecture seulement
     if  (lire.fail()){
         cout << "Erreur pour l'ouverture du fichier" <<endl;
     }
@@ -158,13 +172,14 @@ string lireFichier (string lecture){
             char commande;
             int valeur;
             // si non  getline(lire, commande, ','); // la virgule serait délimiteur
-            lire >> commande >> valeur // Permet de lire dans un fichier les élément qui y sont inscrit
+            lire >> commande;
+            cin.ignore(1);// Enlever la virgule
+            lire >> valeur // Permet de lire dans un fichier les élément qui y sont inscrit
             cout << commande;//Pour voir l'intérieur du fichier contenu
             cout << valeur;
             tolower(Instruction(commande,valeur))
-            
-            
         }
+        lire.close();
     }
 };
 void Instruction(char lecture,int valeur){
@@ -185,6 +200,11 @@ case 'T' :Archiver(racine);// Appel de la classe
     
     
 };
-void enrFichier(string){
+void enrFichier(string nomDeFichier){
+    ofstream enrArbre;
+    
+    while (!nomDeFichier.oef){
+        enrArbre << 
+    }
     
 };
