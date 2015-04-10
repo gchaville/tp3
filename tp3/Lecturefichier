@@ -37,3 +37,21 @@ case 'T' :Archiver(racine);// Appel de la classe
     
     
 };
+
+
+void ABR :: Afficher_Ascendant(noeud *racine, int d){
+    if (racine == NULL)
+        cout << "La valeur n'est pas dans l'arbre" << endl;
+    else if (racine->valeur == d){
+        cout << " Les ascendant du noeud sont :" ;
+    }
+    else
+    {
+        if (racine->valeur < d)
+            Afficher_Ascendant(racine->gauche, d);
+        else
+            Afficher_Ascendant(racine->droit, d);
+        cout << racine->valeur << " ";
+    }
+    
+}
