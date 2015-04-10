@@ -3,157 +3,213 @@
 //  tp3
 //
 //  Created by Daehli Nadeau Otis on 2015-03-25.
-//  Copyright (c) 2015 Daehli Nadeau-Otis. All rights reserved.
+//  Copydroit (c) 2015 Daehli Nadeau-Otis. All droits reserved.
 //
 
 /*----------------Bibliothèque----------------*/
 #include <iostream>
-#include <fstream>
+#include <iomanip>
+#include <sstream>
+#include <vector>
+#include <algorithm>
 #include <string>
+#include <deque>
+#include <fstream>
 #include "Header.h"
 using namespace std;
 
 /*----------------Function----------------*/
-string lireFichier(string lecture);
-void enrFichier(string nomDeFichier);
-void commande(string lecture);
+void lireFichier (string lecture, ABR *&tree);
+void printPretty(noeud *root, int level, int indentSpace, ostream& out);
+void enrFichier(string);
+
+//Struct pour classer par niveau
+struct lvl {
+	int valor;
+	int niveau;
+	bool operator < (const lvl& a) const {
+		return niveau < a.niveau;
+	}
+};
+void Niveler (noeud *&racine, vector <lvl> &pile_daffichage, int &nv);
 
 /*----------------Classe----------------*/
 ABR :: ABR(){
-    racine = NULL;
+	racine = NULL;
 }
 
 ABR ::~ABR(){
-    racine = NULL;
+    delete racine;
+}
+
+noeud* ABR::getRacine () {
+	return racine;
 }
 
 void ABR ::Inserer(noeud *&racine, int d){
-    if (racine == NULL){
-        noeud *racine = new noeud;
-        racine->valeur=d;
-        racine->gauche=NULL;
-        racine->droit=NULL;
+	if (racine == NULL){
+       racine = new noeud;
+	   racine->valeur = d;
+	   racine->droit = NULL;
+	   racine->gauche = NULL;
     }
-    
-    if (racine->valeur >= d){
-        Inserer(racine->gauche,d);
+    else if (d <= racine->valeur) 
+		Inserer (racine->gauche, d);
+	else 
+		Inserer (racine->droit, d);   
+}
+
+noeud* ABR :: SupprimerMin(noeud *&racine){
+	if ( racine->gauche != NULL ) // on continue à gauche
+		return SupprimerMin (racine->gauche) ;
+	else {// le minimum est trouvé à ce stade
+		noeud* temp = racine;
+		racine = racine->droit;
+		return temp;
+	}
+} 
+
+void ABR::Supprimer(noeud *&racine, int d){
+    if ( racine == NULL )
+		cout << endl << d << " n'est pas dans l'arbre \n";
+    else if (d < racine->valeur){
+		Supprimer(racine->gauche, d);
+	}
+	else if (d > racine->valeur){
+		Supprimer(racine->droit,d);
     }
     else {
-        Inserer(racine->droit,d);
-    }
+		noeud *temp = racine;
+		if ( racine->gauche == NULL ) // a seulement un fils droit
+			racine = racine->droit ; // faire pointer vers la droite
+		else if ( racine->droit == NULL ) // seulement un fils gauche
+			racine = racine->gauche ;
+		else { // le noeud a deux fils
+			temp = SupprimerMin ( racine->droit ) ;
+			// supprime le plus petit du fils droit
+			racine->valeur = temp->valeur;
+			}
+		delete temp ;
+	}
 }
 
-noeud* ABR:: getRacine(){
-    return racine;
-}
-void ABR::Supprimer(noeud *racine, int d){
-    
-        if ( racine == NULL )
-            cout << d << "n'est pas dans l'arbre \n";
-        else if (d < racine->valeur){
-            Supprimer(racine->gauche, d);
-        }
-        else if (d > racine->valeur){
-            Supprimer(racine->droit,d);
-        }
-        else {
-            if (racine->gauche==NULL && racine->droit==NULL ) {
-                delete racine;
-            }
-            
-            else if (racine->gauche == NULL){
-                racine = racine->droit;
-            }
-            else if (racine->droit == NULL) {
-                    racine = racine->gauche;
-                }
-            else {
-                noeud *tampon = new noeud;
-                tampon = supprimerMin(racine->droit);
-                racine->valeur=tampon->valeur;
-                Supprimer(tampon,tampon->valeur);
-                }
-            }
-        }
 void ABR:: Afficher_Arbre(noeud *racine, int niveau){
-    if (racine == NULL) cout << "L'arbre est vide" << endl;
-    else{
-    Afficher_Arbre(racine->gauche,niveau+1);
-    for (int i = 0; i <niveau;i++){
-        cout << "" << endl;
-        cout << racine ->valeur;
-    }
-    Afficher_Arbre(racine->droit, niveau++);
+	vector <lvl> liste;
+	Niveler (racine, liste, niveau);
+    // Imprime les éléments de la liste Output
+	cout << endl << "-------------- Affichage par niveau --------------" << endl;
+	cout << "Niveau 0 : ";
+	
+	// Répéter aussi longtemps qu’il reste des éléments dans la liste
+	for (int i=0; i <liste.size(); i++) {
+		if (liste[i].niveau > niveau)
+			cout << endl << "Niveau " << liste[i].niveau << " : ";
+		cout << liste[i].valor << " ";
+		niveau = liste[i].niveau;
+	}
+	cout << endl;
 }
 
-noeud* ABR :: supprimerMin(noeud *&racine){
-    if( racine->gauche != NULL )
-        return supprimerMin((racine->gauche));
+int ABR ::Afficher_hauteur(noeud *racine){
+	if (racine == NULL) return -1; 
+	else {
+	int niveauG =1;
+	niveauG += Afficher_hauteur (racine->gauche);
+
+	int niveauD = 1;
+	niveauD += Afficher_hauteur (racine->droit);
+	if (niveauD > niveauG)
+		return niveauD;
+	else 
+		return niveauG;
+	}
+}
+
+/*------------------ BUG A CORRIGER ------------------*/
+void ABR:: Afficher_Ascendant(noeud *racine, int d){
+  if (racine == NULL) {
+        cout << endl<< "La valeur n'est pas dans l'arbre" << endl;
+		return;
+  }
+  /*else if (getRacine()->valeur == d) {
+	  cout << endl << "La racine de l'arbre ne peut pas avoir d'ascendants !";
+  }*/
+    else if (racine->valeur == d){
+        cout << " Les ascendant du noeud sont :" ;
+    }
     else
-        return racine;
-}
-int ABR :: Afficher_hauteur(noeud *&racine,int niveau){
-    if (racine == NULL) cout <<"La hauteur de l'arbre est" << niveau << endl;
-    else{
-    Afficher_hauteur(racine->gauche, niveau+1);
-        
-        Afficher_hauteur(racine->droit, niveau+1);
+    {
+        if (racine->valeur < d)
+            Afficher_Ascendant(racine->gauche, d);
+        else
+            Afficher_Ascendant(racine->droit, d);
+        cout << racine->valeur << " ";
     }
-    
-    
-    
-}
-void ABR:: Afficher_descendant(noeud *racine, int d){
-    if (racine == d){// Function récursive
-        if (racine->gauche != NULL && Racine->droit !=NULL){/*Si la valeur de d est atteint il y a maintenant des ascedant à faire apparaitre */
-            cout << racine->gauche->valeur<< endl;
-            cout << racine ->droit << endl;
-            if (racine->gauche!=NULL){// Condition pour continuer à faire apparaitre les ascendant
-                Afficher_Ascendant(racine->gauche, racine->valeur);
-            }
-            else if (racine ->droit!=NULL){ // Même condition Ici
-                Afficher_Ascendant(racine->droit, racine->valeur)
-
-        }
-        else if (racine->gauche!=NULL){ // Si il y a seulement des enfants à gauche
-            cout << racine->valeur << endl;
-            Afficher_Ascendant(racine->gauche, racine->valeur);
-        }
-        else if (racine ->droit!=NULL){ // Si il y a seulement des enfants à droite
-            cout< racine->valeur << endl;
-            Afficher_Ascendant(racine->droit, racine->valeur)
-        }
-    }
-    else if (d < racine->valeur) // Pour trouver nôtre valeur
-        Afficher_Ascendant(racine->gauche, d);
-    else // Pour trouver nôtre valeur
-        Afficher_Ascendant(racine->droit, d);
-    
 }
 
-    
-    
-noeud ABR :: Afficher_Ascendant(noeud *racine, int d){
-    if (racine->valeur == d){
-        return racine->valeur;
-    }
-    else if (racine->valeur < d)
-        return Afficher_Ascendant(racine->gauche, d);
-    else
-        return Afficher_Ascendant(racine->droit, d);
-}
-    /* Va falloir revoir la récursivité */
-    
 void ABR:: Archiver (noeud *racine){
-    
+	if (racine != NULL) {
+		cout << racine->valeur;
+		if (racine->gauche != NULL)
+			 cout << ", ";
+		Archiver (racine->gauche);
+		Archiver (racine->droit);
+	}
+	else
+		cout << "/";
 }
 
+void ABR::Instruction(noeud *&racine, char lecture,int valeur){
+    switch (lecture) {
+case 'I' : Inserer(racine, valeur);// Appel de la classe
+    break;
+case 'S': Supprimer(racine, valeur);// Appel de la classe
+    break;
+case 'A': Afficher_Arbre(racine, 0);// Appel de la classe
+    break;
+case 'H' : cout << endl << "La hauteur de l'arbre est : " << Afficher_hauteur(racine) << endl;// Appel de la classe
+    break;
+case 'G' : Afficher_Ascendant(racine, valeur);// Appel de la classe
+    break;
+case 'T' : Archiver(racine);// Appel de la classe
+    break;
+	}
+}
 
+/*---------------------------------- MAIN ----------------------------------*/
+int main() {
+   ABR arbre;
 
-int main(int argc, const char * argv[]) {
-    // insert code here...
-    std::cout << "Hello, World!\n";
-    return 0;
+   noeud* racine = arbre.getRacine();
+   ifstream lire;
+   string lecture;
+   cout << "Entrer le nom du fichier : "; cin >> lecture;
+	
+   lire.open(lecture.c_str()); // ios:: in lecture seulement
+   if  (lire.fail()){
+       cout << "Erreur pour l'ouverture du fichier" <<endl;
+   }
+   else {
+	   while (!lire.eof()) {// Je vais esseyer un drôle de code
+		   char commande;
+           int valeur = 0;
+           // si non  getline(lire, commande, ','); // la virgule serait délimiteur
+           lire >> commande; 
+			commande = toupper(commande);
+            lire.ignore();// Enlever la virgule
+			if (commande == 'I' || commande == 'S' || commande == 'G') {
+				lire >> valeur; // Permet de lire dans un fichier les élément qui y sont inscrit*
+			}
+            //Pour voir l'intérieur du fichier contenu
+            arbre.Instruction(racine, commande,valeur);
+        }
+        lire.close();
+    }
+   cout << endl << "=================================================================================" << endl;
+   printPretty (racine, 1, 2, cout);
+
+   system ("pause");
+   return 0;
 }
 /* -------------------------------------------------------------------------------*/
 /* DESCRIPTION :      Fonction principale du programmme								*/
@@ -162,49 +218,117 @@ int main(int argc, const char * argv[]) {
 /* REMARQUE : 		  Aucune														*/
 /* -------------------------------------------------------------------------------*/
 
-string lireFichier (string lecture){
-    ifstream lire(lecture.c_str(), ios::in); // ios:: in lecture seulement
-    if  (lire.fail()){
-        cout << "Erreur pour l'ouverture du fichier" <<endl;
-    }
-    else{
-        while (!lire.eof()) {// Je vais esseyer un drôle de code
-            char commande;
-            int valeur;
-            // si non  getline(lire, commande, ','); // la virgule serait délimiteur
-            lire >> commande;
-            cin.ignore(1);// Enlever la virgule
-            lire >> valeur // Permet de lire dans un fichier les élément qui y sont inscrit
-            cout << commande;//Pour voir l'intérieur du fichier contenu
-            cout << valeur;
-            tolower(Instruction(commande,valeur))
-        }
-        lire.close();
-    }
-};
-void Instruction(char lecture,int valeur){
-    
-    switch (lecture)
-case 'I' : Inserer(racine, valeur);// Appel de la classe
-    break;
-case 'S':Supprimer(racine, valeur);// Appel de la classe
-    break;
-case 'A': Afficher_Arbre(racine, 0);// Appel de la classe
-    break;
-case 'H' :Afficher_Arbre(racine, );// Appel de la classe
-    break;
-case 'G' :Afficher_Ascendant(racine, valeur);// Appel de la classe
-    break;
-case 'T' :Archiver(racine);// Appel de la classe
-    break;
-    
+void lireFichier (string lecture, ABR *&tree){
     
 };
-void enrFichier(string nomDeFichier){
-    ofstream enrArbre;
+
+
+
+void Niveler (noeud*&racine, vector <lvl> &pile_daffichage, int &nv) {
+	bool visited = false;
+	if (racine == NULL) {
+		nv++;
+		return;
+	}
+	else {
+		Niveler (racine->gauche, pile_daffichage, nv);
+		nv = 0;
+		Niveler (racine->droit, pile_daffichage, nv);
+		if (racine->droit == NULL && racine->gauche == NULL) nv = 0;
+		lvl courant;
+		courant.niveau = nv;
+		courant.valor = racine->valeur;
+		pile_daffichage.push_back (courant);
+		nv++;
+	}
+	sort(pile_daffichage.begin(), pile_daffichage.end());
+}
+
+/*******************************************************************************************************************************/
+/****************************************************MAKE TREE BECOME PRETTY****************************************************/
+/*******************************************************************************************************************************/
+
+// Find the maximum height of the binary tree
+int maxHeight(noeud *p) {
+  if (!p) return 0;
+  int leftHeight = maxHeight(p->gauche);
+  int rightHeight = maxHeight(p->droit);
+  return (leftHeight > rightHeight) ? leftHeight + 1: rightHeight + 1;
+}
+
+// Convert an integer value to string
+string intToString(int val) {
+  ostringstream ss;
+  ss << val;
+  return ss.str();
+}
+// Print the arm branches (eg, /    \ ) on a line
+void printBranches(int branchLen, int nodeSpaceLen, int startLen, int nodesInThisLevel, const deque<noeud*>& nodesQueue, ostream& out) {
+  deque<noeud*>::const_iterator iter = nodesQueue.begin();
+  for (int i = 0; i < nodesInThisLevel / 2; i++) {  
+    out << ((i == 0) ? setw(startLen-1) : setw(nodeSpaceLen-2)) << "" << ((*iter++) ? "/" : " ");
+    out << setw(2*branchLen+2) << "" << ((*iter++) ? "\\" : " ");
+  }
+  out << endl;
+}
+ 
+// Print the branches and node (eg, ___10___ )
+void printNodes(int branchLen, int nodeSpaceLen, int startLen, int nodesInThisLevel, const deque<noeud*>& nodesQueue, ostream& out) {
+  deque<noeud*>::const_iterator iter = nodesQueue.begin();
+  for (int i = 0; i < nodesInThisLevel; i++, iter++) {
+    out << ((i == 0) ? setw(startLen) : setw(nodeSpaceLen)) << "" << ((*iter && (*iter)->gauche) ? setfill('_') : setfill(' '));
+    out << setw(branchLen+2) << ((*iter) ? intToString((*iter)->valeur) : "");
+    out << ((*iter && (*iter)->droit) ? setfill('_') : setfill(' ')) << setw(branchLen) << "" << setfill(' ');
+  }
+  out << endl;
+}
+ 
+// Print the leaves only (just for the bottom row)
+void printLeaves(int indentSpace, int level, int nodesInThisLevel, const deque<noeud*>& nodesQueue, ostream& out) {
+  deque<noeud*>::const_iterator iter = nodesQueue.begin();
+  for (int i = 0; i < nodesInThisLevel; i++, iter++) {
+    out << ((i == 0) ? setw(indentSpace+2) : setw(2*level+2)) << ((*iter) ? intToString((*iter)->valeur) : "");
+  }
+  out << endl;
+}
+ 
+// Pretty formatting of a binary tree to the output stream
+// @ param
+// level  Control how wide you want the tree to sparse (eg, level 1 has the minimum space between nodes, while level 2 has a larger space between nodes)
+// indentSpace  Change this to add some indent space to the gauche (eg, indentSpace of 0 means the lowest level of the gauche node will stick to the gauche margin)
+void printPretty(noeud *root, int level, int indentSpace, ostream& out) {
+  int h = maxHeight(root);
+  int nodesInThisLevel = 1;
+ 
+  int branchLen = 2*((int)pow(2.0,h)-1) - (3-level)*(int)pow(2.0,h-1);  // eq of the length of branch for each node of each level
+  int nodeSpaceLen = 2 + (level+1)*(int)pow(2.0,h);  // distance between gauche neighbor node's droit arm and droit neighbor node's gauche arm
+  int startLen = branchLen + (3-level) + indentSpace;  // starting space to the first node to print of each level (for the gauche most node of each level only)
     
-    while (!nomDeFichier.oef){
-        enrArbre << 
+  deque<noeud*> nodesQueue;
+  nodesQueue.push_back(root);
+  for (int r = 1; r < h; r++) {
+    printBranches(branchLen, nodeSpaceLen, startLen, nodesInThisLevel, nodesQueue, out);
+    branchLen = branchLen/2 - 1;
+    nodeSpaceLen = nodeSpaceLen/2 + 1;
+    startLen = branchLen + (3-level) + indentSpace;
+    printNodes(branchLen, nodeSpaceLen, startLen, nodesInThisLevel, nodesQueue, out);
+ 
+    for (int i = 0; i < nodesInThisLevel; i++) {
+      noeud *currNode = nodesQueue.front();
+      nodesQueue.pop_front();
+      if (currNode) {
+       nodesQueue.push_back(currNode->gauche);
+       nodesQueue.push_back(currNode->droit);
+      } else {
+        nodesQueue.push_back(NULL);
+        nodesQueue.push_back(NULL);
+      }
     }
-    
-};
+    nodesInThisLevel *= 2;
+  }
+  printBranches(branchLen, nodeSpaceLen, startLen, nodesInThisLevel, nodesQueue, out);
+  printLeaves(indentSpace, level, nodesInThisLevel, nodesQueue, out);
+}
+
+/*******************************************************************************************************************************/
+/*******************************************************************************************************************************/
